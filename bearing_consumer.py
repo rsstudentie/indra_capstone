@@ -1,16 +1,30 @@
-# This Python 3 environment comes with many helpful analytics libraries installed
-# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
-# For example, here's several helpful packages to load
+from kafka import KafkaConsumer
+import json
 
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+# Kafka consumer configuration
+consumer = KafkaConsumer('bearingdata',
+                         bootstrap_servers=['localhost:9092'],
+                         auto_offset_reset='earliest',
+                         enable_auto_commit=True,
+                         group_id='my-group',
+                         value_deserializer=lambda x: x.decode('utf-8'))
 
-# Input data files are available in the read-only "../input/" directory
-# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+# Path to the file where data will be stored
+output_file = 'output.txt'
 
-import os
+# Function to write received data to a file
+def write_to_file(data):
+    with open(output_file, 'a') as file:
+        file.write(data + '\n')
 
-for dirname, _, filenames in os.walk('data/1st_test/1st_test'):
-    for filename in filenames:
-        print(os.path.join(dirname, filename))
+# Iterate over received messages from the topic
+for message in consumer:
+    # Get the value of the message (data sent by the producer)
+    data = message.value
+    # Write the data to the file
+    write_to_file(data)
+    print("Data written to file:", data)
 
+# Close the consumer after finishing reading
+print("All rows received and saved to received_rows.csv")
+consumer.close()
